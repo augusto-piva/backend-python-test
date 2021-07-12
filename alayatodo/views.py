@@ -4,14 +4,15 @@ from flask import (
     redirect,
     render_template,
     request,
-    session
+    session,
+    flash
     )
 
 
 @app.route('/')
 def home():
     with app.open_resource('../README.md', mode='r') as f:
-        readme = "".join(l.decode('utf-8') for l in f)
+        readme = "".join(l for l in f)
         return render_template('index.html', readme=readme)
 
 
@@ -65,6 +66,11 @@ def todos():
 def todos_POST():
     if not session.get('logged_in'):
         return redirect('/login')
+    #Task 1 from here
+    if request.form.get('description') == '':
+        flash('There must be a description')
+        return redirect('/todo')
+        #to here
     g.db.execute(
         "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
         % (session['user']['id'], request.form.get('description', ''))
