@@ -1,3 +1,4 @@
+import json
 from alayatodo import app
 from flask import (
     g,
@@ -50,6 +51,12 @@ def todo(id):
     todo = cur.fetchone()
     return render_template('todo.html', todo=todo)
 
+@app.route('/todo/json/<id>', methods=['GET'])
+def todo_in_json(id):
+    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
+    todo = json.dumps(cur.fetchone())
+    return render_template('todo_in_json.html', todo=todo)
+
 
 @app.route('/todo', methods=['GET'])
 @app.route('/todo/', methods=['GET'])
@@ -93,4 +100,4 @@ def todo_completed(id):
         return redirect('/login')
     g.db.execute("UPDATE todos SET completed = 1 WHERE id ='%s'" % id)
     g.db.commit()
-    return redirect('/todo')
+    return redirect('/todo')   
