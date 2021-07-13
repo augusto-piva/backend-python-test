@@ -78,11 +78,18 @@ def todos_POST():
         flash('There must be a description')
         return redirect('/todo')
         #to here
-    g.db.execute(
+    
+    #Task 4 from here
+    try:
+        g.db.execute(
         "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
         % (session['user']['id'], request.form.get('description', ''))
-    )
-    g.db.commit()
+        )
+        g.db.commit()
+        flash("Todo '%s' Succesfully added" % request.form.get('description'))
+    except:
+        flash("Todo '%s' was not added" % request.form.get('description'))
+    #To here
     return redirect('/todo')
 
 
@@ -90,8 +97,15 @@ def todos_POST():
 def todo_delete(id):
     if not session.get('logged_in'):
         return redirect('/login')
-    g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
-    g.db.commit()
+    #Task 4 from here
+    try:
+        cur = g.db.execute("SELECT description FROM todos WHERE id = '%s'" % id)
+        g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)    
+        g.db.commit()
+        flash("Todo '%s' Succesfully deleted" % cur.fetchone()['description'])
+    except:
+        flash("Todo '%s' was not deleted" % cur.fetchone()['description'])
+        #to here
     return redirect('/todo')
 
 @app.route('/todo/completed/<id>', methods=['POST'])
