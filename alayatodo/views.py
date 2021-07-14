@@ -1,5 +1,6 @@
 import json
 from alayatodo import app
+from flask_paginate import (Pagination, get_page_parameter)
 from flask import (
     g,
     redirect,
@@ -58,14 +59,28 @@ def todo_in_json(id):
     return render_template('todo_in_json.html', todo=todo)
 
 
+
+
 @app.route('/todo', methods=['GET'])
 @app.route('/todo/', methods=['GET'])
 def todos():
+    search = False
+    # q = request.args.get('q')
+    # print(request.args)
+    # if q:
+    #     search = True
     if not session.get('logged_in'):
         return redirect('/login')
-    cur = g.db.execute("SELECT * FROM todos")
+    #Filtro las todos del usuario logeado.
+    cur = g.db.execute("SELECT * FROM todos WHERE user_id = '%s'" 
+    % session.get('user')['id'])
     todos = cur.fetchall()
-    return render_template('todos.html', todos=todos)
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    pagination = Pagination(css_framework='foundation', per_page = 4, page = page ,total = len(todos), search=search, record_name = 'todos')
+    todos_paginated = todos[(page-1)*4:page*4]
+    return render_template('todos.html', todos_paginated=todos_paginated,pagination=pagination)
+
+
 
 
 @app.route('/todo', methods=['POST'])

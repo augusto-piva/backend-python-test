@@ -1,12 +1,17 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="col-md-5 col-md-offset-5">
+<div>
     <h1>Todo List:</h1>
+    {{ pagination.info }}
+    <div class = 'row'></div>
+    {{ pagination.links }}
     <table class="table table-striped">
-        <th>#</th><th>User</th><th>Description</th><th>Delete</th><th>Completed</th><th>See in JSON</th>
-        {% for todo in todos %}
+
+        <th></th><th># Task</th><th>User</th><th>Description</th><th>Delete</th><th>Completed</th><th>See in JSON</th>
+        {% for todo in todos_paginated %}
             <tr>
+                <td>{{ loop.index + pagination.skip }}</td>
                 <td>{{ todo.id }}</td>
                 <td>{{ todo.user_id }}</td>
                 <td>
@@ -46,5 +51,6 @@
             </form>
         </tr>
     </table>
+    {{ pagination.links }}
 </div>
 {% endblock %}
