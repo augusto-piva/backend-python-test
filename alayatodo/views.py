@@ -1,4 +1,6 @@
 import json
+from . import db
+from .models import Users, Todos
 from alayatodo import app
 from flask_paginate import (Pagination, get_page_parameter)
 from flask import (
@@ -27,12 +29,10 @@ def login():
 def login_POST():
     username = request.form.get('username')
     password = request.form.get('password')
-
-    sql = "SELECT * FROM users WHERE username = '%s' AND password = '%s'";
-    cur = g.db.execute(sql % (username, password))
-    user = cur.fetchone()
+    user = Users.query.filter_by(username = username ,password = password).first()
+    user_dict = {'id': user.id , 'username': user.username}
     if user:
-        session['user'] = dict(user)
+        session['user'] = user_dict
         session['logged_in'] = True
         return redirect('/todo')
 
@@ -48,15 +48,14 @@ def logout():
 
 @app.route('/todo/<id>', methods=['GET'])
 def todo(id):
-    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
-    todo = cur.fetchone()
+    todo = Todos.query.get(id)
     return render_template('todo.html', todo=todo)
 
 @app.route('/todo/json/<id>', methods=['GET'])
 def todo_in_json(id):
-    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
-    todo = json.dumps(cur.fetchone())
-    return render_template('todo_in_json.html', todo=todo)
+    todo = Todos.query.get(id)
+    todo_json = json.dumps({'id': todo.id, 'description': todo.description, 'completed':todo.completed})
+    return render_template('todo_in_json.html', todo=todo_json)
 
 
 
@@ -65,23 +64,18 @@ def todo_in_json(id):
 @app.route('/todo/', methods=['GET'])
 def todos():
     search = False
-    # q = request.args.get('q')
-    # print(request.args)
-    # if q:
-    #     search = True
+    q = request.args.get('q')
+    if q:
+        search = True
     if not session.get('logged_in'):
         return redirect('/login')
     #Filtro las todos del usuario logeado.
-    cur = g.db.execute("SELECT * FROM todos WHERE user_id = '%s'" 
-    % session.get('user')['id'])
-    todos = cur.fetchall()
+    todos = Todos.query.filter_by(user_id = session.get('user')['id'])
     page = request.args.get(get_page_parameter(), type=int, default=1)
-    pagination = Pagination(css_framework='foundation', per_page = 4, page = page ,total = len(todos), search=search, record_name = 'todos')
-    todos_paginated = todos[(page-1)*4:page*4]
-    return render_template('todos.html', todos_paginated=todos_paginated,pagination=pagination)
-
-
-
+    #Paginacion
+    pagination = Pagination(css_framework='foundation', per_page = 4, page = page , total = todos.count(), search=search, record_name = 'todos')
+    todos_paginated = todos.paginate(per_page= 4).items
+    return render_template('todos.html', todos_paginated =todos_paginated,pagination=pagination)
 
 @app.route('/todo', methods=['POST'])
 @app.route('/todo/', methods=['POST'])
@@ -93,14 +87,11 @@ def todos_POST():
         flash('There must be a description')
         return redirect('/todo')
         #to here
-    
     #Task 4 from here
     try:
-        g.db.execute(
-        "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
-        % (session['user']['id'], request.form.get('description', ''))
-        )
-        g.db.commit()
+        todo = Todos(user_id = session['user']['id'], description = request.form.get('description', '') )
+        db.session.add(todo)
+        db.session.commit()
         flash("Todo '%s' Succesfully added" % request.form.get('description'))
     except:
         flash("Todo '%s' was not added" % request.form.get('description'))
@@ -114,12 +105,12 @@ def todo_delete(id):
         return redirect('/login')
     #Task 4 from here
     try:
-        cur = g.db.execute("SELECT description FROM todos WHERE id = '%s'" % id)
-        g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)    
-        g.db.commit()
-        flash("Todo '%s' Succesfully deleted" % cur.fetchone()['description'])
+        todo_delete = Todos.query.get(id)
+        db.session.delete(todo_delete)
+        db.session.commit()
+        flash("Todo '%s' Succesfully deleted" % todo_delete.description)
     except:
-        flash("Todo '%s' was not deleted" % cur.fetchone()['description'])
+        flash("Todo '%s' was not deleted" % todo_delete.description)
         #to here
     return redirect('/todo')
 
@@ -127,6 +118,13 @@ def todo_delete(id):
 def todo_completed(id):
     if not session.get('logged_in'):
         return redirect('/login')
-    g.db.execute("UPDATE todos SET completed = 1 WHERE id ='%s'" % id)
-    g.db.commit()
+    todo_update = Todos.query.get(id)
+    if todo_update.completed == 1:
+        todo_update.completed = 0
+        db.session.commit()
+    else:
+        todo_update.completed = 1
+        db.session.commit()
+    print(todo_update.completed)
+    
     return redirect('/todo')   

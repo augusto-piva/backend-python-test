@@ -21,10 +21,16 @@
                     </form>
                 {% else %}
                     Completed
+                    <form method="post" action="{{ url_for('todo_completed', id=todo.id) }}">
+                    <button type="submit" class="btn btn-xs btn-info"><span class="glyphicon glyphicon-circle-arrow-left glyphicon-white"></span></button> Not Completed
+                    </form>
                 {% endif %}
             </td>
         </tr>
     </table>
 </div>
+<form method="get" action="{{ url_for('todos')}}">
+    <button type="submit" class="btn btn-m btn-normal">Back</button>
+</form>
 
 {% endblock %}

@@ -31,6 +31,9 @@
                         </form>
                     {% else %}
                         Completed
+                        <form method="post" action="{{ url_for('todo_completed', id=todo.id) }}">
+                        <button type="submit" class="btn btn-xs btn-info"><span class="glyphicon glyphicon-circle-arrow-left glyphicon-white"></span></button> Not Completed
+                        </form>
                     {% endif %}
                 </td>
                 <td>
